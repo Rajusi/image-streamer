@@ -1,0 +1,18 @@
+!echo "mv -f /etc/rc.d/rc.local.backup /etc/rc.d/rc.local" >> ./rc.local
+
+#upload rc.local
+upload ./rc.local /etc/rc.d/rc.local
+chmod 755 /etc/rc.d/rc.local
+#Upload backup file.
+upload ./rc.local.backup /etc/rc.d/rc.local.backup
+
+echo "####"
+cat /etc/rc.d/rc.local
+echo "####"
+
+#Remove the temporary directpory created
+rm-rf /tmp/ImageStreamer
+
+#unmount the root partition
+
+unmount /

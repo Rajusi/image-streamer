@@ -1,0 +1,18 @@
+!echo "mv -f /etc/init.d/after.local.backup /etc/init.d/after.local" >> ./after.local
+
+#upload after.local
+upload ./after.local /etc/init.d/after.local
+chmod 755 /etc/init.d/after.local
+#Upload backup file.
+upload ./after.local.backup /etc/init.d/after.local.backup
+
+echo "####"
+cat /etc/init.d/after.local
+echo "####"
+
+#Remove the temporary directpory created
+rm-rf /tmp/ImageStreamer
+
+#unmount the root partition
+
+unmount /

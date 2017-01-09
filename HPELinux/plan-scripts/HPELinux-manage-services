@@ -1,0 +1,14 @@
+#Enable/Disable SSH
+upload -<<END /tmp/ImageStreamer/ssh_service
+#! /bin/bash
+ssh=@SSH:Enabled@
+if [ $ssh == Enabled ]
+then
+echo "service ssh restart" >> ./rc.local
+else
+echo "service ssh stop" >> ./rc.local
+fi
+exit 0
+END
+download /tmp/ImageStreamer/ssh_service ./ssh_service
+!source ./ssh_service

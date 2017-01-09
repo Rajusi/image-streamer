@@ -1,0 +1,30 @@
+#Enable SELINUX
+download /etc/selinux/config ./selinux_config
+upload -<<END /tmp/ImageStreamer/Enable_Selinux
+#! /bin/bash
+sed -i '/SELINUX=disabled/c\SELINUX=enforcing' ./selinux_config
+exit 0
+END
+download /tmp/ImageStreamer/Enable_Selinux ./Enable_Selinux
+!source ./Enable_Selinux
+
+upload ./selinux_config /etc/selinux/config
+
+#Start or Stop service.
+!echo "service firewalld stop" >> rc.local
+
+
+#Enable/Disable SSH
+upload -<<END /tmp/ImageStreamer/ssh_service
+#! /bin/bash
+ssh=@SSH:Enabled@
+if [ $ssh == Enabled ]
+then
+echo "service sshd restart" >> ./rc.local
+else
+echo "service sshd stop" >> ./rc.local
+fi
+exit 0
+END
+download /tmp/ImageStreamer/ssh_service ./ssh_service
+!source ./ssh_service

@@ -1,0 +1,73 @@
+upload -<<END /etc/init.d/MgmtNIC-configure
+#! /bin/bash
+net_mac=$1
+net_ip=$2
+net_gw=$3
+net_netmask=$4
+#Check the maching interface name for $net_mac.
+interfaces=`ls /sys/class/net/`
+for iface in $interfaces
+do
+	mac=`cat /sys/class/net/$iface/address`
+	if [ ${mac,,} == ${net_mac,,} ]
+	then
+		interface_name=$iface
+		echo $interface_name >> /tmp/interface_names
+	fi
+done
+
+sed -ie "\$aauto $interface_name" /etc/network/interfaces
+
+if [[ -z $net_ip ]]
+then
+echo "Configure $interface_name for DHCP"
+	sed -ie "\$aiface $interface_name inet dhcp" /etc/network/interfaces
+
+else
+echo "Configure $interface_name for static."
+	sed -ie "\$aiface $interface_name inet static" /etc/network/interfaces
+	sed -ie "\$a\        address $net_ip" /etc/network/interfaces
+	sed -ie "\$a\        gateway $net_gw" /etc/network/interfaces
+	sed -ie "\$a\        netmask $net_netmask" /etc/network/interfaces
+fi
+exit 0
+END
+
+upload -<<END /tmp/ImageStreamer/network-configuration
+#! /bin/bash
+NICs_count=@TotalMgmtNICs:1@
+for i in `seq 1 $NICs_count`
+do
+	if [ $i -eq 1 ];then
+		if [[ "@MgmtNIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC1.mac@ @MgmtNIC1.ipaddress@ @MgmtNIC1.gateway@ @MgmtNIC1.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC1.mac@" >> ./rc.local
+		fi
+	elif [ $i -eq 2 ];then
+		if [[ "@MgmtNIC2.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC2.mac@ @MgmtNIC2.ipaddress@ @MgmtNIC2.gateway@ @MgmtNIC2.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC2.mac@" >> ./rc.local
+		fi
+	elif [ $i -eq 3 ];then
+		if [[ "@MgmtNIC3.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC3.mac@ @MgmtNIC3.ipaddress@ @MgmtNIC3.gateway@ @MgmtNIC3.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC3.mac@" >> ./rc.local
+		fi
+	elif [ $i -eq 4 ];then
+		if [[ "@MgmtNIC4.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC4.mac@ @MgmtNIC4.ipaddress@ @MgmtNIC4.gateway@ @MgmtNIC4.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/MgmtNIC-configure @MgmtNIC4.mac@" >> ./rc.local
+		fi
+	fi
+done
+echo "service networking restart" >> ./rc.local
+echo "rm -f /etc/init.d/MgmtNIC-configure" >> ./rc.local
+exit 0
+END
+
+download /tmp/ImageStreamer/network-configuration ./network-configuration
+!source ./network-configuration

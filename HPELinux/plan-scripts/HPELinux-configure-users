@@ -1,0 +1,39 @@
+# Change root's password 
+upload -<<END /etc/init.d/change_root_passwd
+#! /bin/bash
+echo "root:@NewRootPassword@" | chpasswd
+unlink $0
+END
+
+#Script to add new user and create password for new user
+upload -<<END /etc/init.d/add_users
+#!/bin/bash
+
+users_string="@NewUsers@"
+
+#Users will be added with the same password. On first login users has to change their password.
+password="@NewUsersPassword@"
+IFS=',; '
+for user in $users_string
+do
+	if [ $(id -u) -eq 0 ]; then
+			egrep "$user" /etc/passwd >/dev/null
+			if [ $? -eq 0 ]; then
+					echo "Warning: $user exists!"
+			else
+					useradd -m $user
+					echo "$user:$password" | chpasswd
+					[ $? -eq 0 ] && echo "User $user has been added to system!" || echo "Failed to add a user!"
+			fi
+	else
+			echo "Error: Unable to add $user"
+	fi
+done
+unlink $0
+END
+
+#Add script to rc.local to run at boot time.
+!echo "sh /etc/init.d/change_root_passwd" >> rc.local
+
+#Add script to rc.local to run at boot time.
+!echo "sh /etc/init.d/add_users" >> rc.local

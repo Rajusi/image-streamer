@@ -1,0 +1,128 @@
+# Edit network file to set hostname 
+upload -<<END /etc/sysconfig/network
+#This file has been altered by Image Streamer.
+NETWORKING=yes
+HOSTNAME=@DomainName@
+END
+
+# Add /etc/hostname entry for hostname
+upload -<<END /etc/hostname
+@DomainName@
+END
+
+#Script to Remove default route 
+upload -<<END /etc/init.d/delete_def_route
+#!/bin/bash
+# chkconfig: 2345 20 80
+# description: Description comes here....
+
+# Source function library.
+. /etc/init.d/functions
+
+case "$1" in
+    start)
+       #start
+       ip route del default
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+exit 0
+END
+
+upload -<<END /etc/init.d/rm_del_def_route
+#!/bin/bash
+# chkconfig: 2345 20 80
+# description: Description comes here....
+
+# Source function library.
+. /etc/init.d/functions
+
+case "$1" in
+    start)
+		chkconfig --del delete_def_route
+		file="/etc/init.d/delete_def_route"
+		if [ -f $file ]
+		then
+			rm -f $file
+		fi
+		chkconfig --del rm_del_def_route
+		unlink $0
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0
+END
+
+upload -<<END /tmp/ImageStreamer/del-def-route
+#! /bin/bash
+
+#Add to rc.local
+cat <<"EOF" >>./rc.local
+
+chmod +x /etc/init.d/delete_def_route
+chkconfig --add /etc/init.d/delete_def_route
+service delete_def_route start
+
+#### Note ####
+#If you don't want to run the service "delete_def_route" after each boot, you can uncomment the block below.
+#chmod +x /etc/init.d/rm_del_def_route
+#chkconfig --add /etc/init.d/rm_del_def_route
+#### Note ####
+
+EOF
+
+exit 0
+END
+
+download /tmp/ImageStreamer/del-def-route ./del-def-route
+!source ./del-def-route
+
+# Configure /etc/hosts by running with the master customize service
+upload -<<END /tmp/configure_hosts
+#! /bin/bash
+sleep 10s
+ifaces=`cat /tmp/interface_names`
+rm -f /tmp/interface_names
+read -r -a array <<< $ifaces
+iface=${array[0]}
+ip_address=`ip a | grep $iface | grep 'inet' | cut -d: -f2 | awk '{ print $2}' | cut -d/ -f1`
+fqdn=@DomainName@
+alias=`echo "$fqdn" | awk -F'[.]' '{print $1}'`
+sed -i "/127.0.0.1/a\\$ip_address $fqdn $alias" /etc/hosts
+sed -i "/127.0.0.1/a\\#This file has been altered by Image Streamer." /etc/hosts
+unlink $0
+END
+
+echo "-------- new /etc/sysconfig/network ----------"
+cat /etc/sysconfig/network
+
+echo "-------- new /etc/hostname ----------"
+cat /etc/hostname
+
+#Add the generated script to rc.local to run at boot time.
+!echo "sh /tmp/configure_hosts" >> rc.local

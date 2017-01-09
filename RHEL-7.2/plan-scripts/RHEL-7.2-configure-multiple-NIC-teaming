@@ -1,0 +1,71 @@
+#Child script for NIC Teaming.
+upload -<<END /tmp/NIC-teaming
+#! /bin/bash
+team_name=$1
+net1_mac=$2
+net2_mac=$3
+net1_ip=$4
+net1_gw=$5
+
+#Check the maching interface names for mac addresses.
+interfaces=`ls /sys/class/net/`
+for iface in $interfaces
+do
+	mac=`cat /sys/class/net/$iface/address`
+	if [ ${mac,,} == ${net1_mac,,} ]
+	then
+		nic1=$iface
+	elif [ ${mac,,} == ${net2_mac,,} ]
+	then
+		nic2=$iface
+	fi
+done
+	
+#Add $team_name connection.
+nmcli connection add type team con-name $team_name ifname $team_name
+if [[ -z $net1_ip ]]
+then
+	echo "Configure $team_name for DHCP"
+	nmcli connection modify $team_name ipv4.method auto
+else
+	echo "Configure $team_name for static."
+	nmcli connection modify $team_name ipv4.method amanual
+	nmcli connection modify $team_name ipv4.addresses $net1_ip
+	nmcli connection modify $team_name ipv4.gateway $net1_gw
+fi
+
+nmcli connection add type team-slave con-name $team_name-port1 ifname $nic1 master $team_name
+nmcli connection add type team-slave con-name $team_name-port2 ifname $nic2 master $team_name
+exit 0
+END
+
+#Parent script for NIC Teaming.
+upload -<<END /tmp/ImageStreamer/teaming-configuration
+#! /bin/bash
+team_count=@TotalNicTeamings:1@
+team0=@FirstNicTeamName:team0@
+team1=@SecondNicTeamName:team1@
+for i in `seq 1 $team_count`
+do
+	if [ $i -eq 1 ];then
+		echo "echo $team0 > /tmp/interface_names" >> ./rc.local
+		if [[ "@Team0NIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/NIC-teaming $team0 @Team0NIC1.mac@ @Team0NIC2.mac@ @Team0NIC1.ipaddress@ @Team0NIC1.gateway@" >> ./rc.local
+		else
+			echo "sh /tmp/NIC-teaming $team0 @Team0NIC1.mac@ @Team0NIC2.mac@" >> ./rc.local
+		fi
+	elif [ $i -eq 2 ];then
+		echo "echo $team1 >> /tmp/interface_names" >> ./rc.local
+		if [[ "@Team1NIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/NIC-teaming $team1 @Team1NIC1.mac@ @Team1NIC2.mac@ @Team1NIC1.ipaddress@ @Team1NIC1.gateway@" >> ./rc.local
+		else
+			echo "sh /tmp/NIC-teaming $team1 @Team1NIC1.mac@ @Team1NIC2.mac@" >> ./rc.local
+		fi
+	fi
+done
+echo "rm -rf /tmp/NIC-teaming" >> ./rc.local
+echo "service network restart" >> ./rc.local
+END
+
+download /tmp/ImageStreamer/teaming-configuration ./teaming-configuration
+!source ./teaming-configuration

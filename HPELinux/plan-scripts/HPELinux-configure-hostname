@@ -1,0 +1,126 @@
+# Add /etc/hostname entry for hostname
+upload -<<END /etc/hostname
+@DomainName@
+END
+
+echo "-------- new /etc/hostname ----------"
+cat /etc/hostname
+
+#Script to Add default route 
+upload -<<END /etc/init.d/add_def_route
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          add_def_route
+# Required-Start:    $local_fs $network $named $time $syslog
+# Required-Stop:     $local_fs $network $named $time $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Description:       Add default route
+### END INIT INFO
+
+case "$1" in
+    start)
+       #start
+       route add default gw @Gateway@ InterfaceName
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+exit 0
+END
+
+upload -<<END /etc/init.d/rm_add_def_route
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          rm_add_def_route
+# Required-Start:    $local_fs $network $named $time $syslog
+# Required-Stop:     $local_fs $network $named $time $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Description:       Removes the Add default route service
+### END INIT INFO
+
+case "$1" in
+    start)
+  update-rc.d -f add_def_route remove
+  update-rc.d add_def_route stop 20 2 3 4 5 .
+  file="/etc/init.d/add_def_route"
+  if [ -f $file ]
+  then
+   rm -f $file
+  fi
+  update-rc.d -f rm_add_def_route remove
+  update-rc.d rm_add_def_route stop 20 2 3 4 5 .
+  unlink $0
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0
+END
+
+upload -<<END /etc/init.d/configure_add_def_route
+#! /bin/bash
+ifaces=`cat /tmp/interface_names`
+read -r -a array <<< $ifaces
+interface_name=${array[0]}
+sed -i "s/InterfaceName/$interface_name/g" /etc/init.d/add_def_route
+chmod +x /etc/init.d/add_def_route
+update-rc.d add_def_route defaults
+service add_def_route start
+#### Note ####
+#If you don't want to run the service "add_def_route" after each boot, you can uncomment the block below.
+#chmod +x /etc/init.d/rm_add_def_route
+#update-rc.d rm_add_def_route defaults
+#service rm_add_def_route start
+#### Note ####
+unlink $0
+exit 0
+END
+
+#Add script to rc.local to run at boot time.
+!echo "bash /etc/init.d/configure_add_def_route" >> rc.local
+
+# Configure /etc/hosts by running with the master customize service
+upload -<<END /etc/init.d/configure_hosts
+#! /bin/bash
+sleep 10s
+ifaces=`cat /tmp/interface_names`
+#rm -f /tmp/interface_names
+read -r -a array <<< $ifaces
+iface=${array[0]}
+ip_address=`ip a | grep $iface | grep 'inet' | cut -d: -f2 | awk '{ print $2}' | cut -d/ -f1`
+fqdn=@DomainName@
+alias=`echo "$fqdn" | awk -F'[.]' '{print $1}'`
+sed -i "/127.0.0.1/a\\$ip_address $fqdn $alias" /etc/hosts
+sed -i "/127.0.0.1/a\\#This file has been altered by Image Streamer." /etc/hosts
+unlink $0
+exit 0
+END
+
+#Add script to rc.local to run at boot time.
+!echo "bash /etc/init.d/configure_hosts" >> rc.local

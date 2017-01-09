@@ -1,0 +1,117 @@
+# Update hostname
+upload -<<END /etc/hostname
+@DomainName@
+END
+
+upload -<<END /etc/init.d/add_def_gateway
+#!/bin/bash
+# chkconfig: 2345 20 80
+# description: Description comes here....
+
+case "$1" in
+    start)   
+                sleep 30s
+		route add default gw @Gateway@ InterfaceName
+ exit 0
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+exit 0
+END
+
+upload -<<END /etc/init.d/rm_add_def_route
+#!/bin/bash
+# chkconfig: 2345 20 80
+# description: Description comes here....
+
+# Source function library.
+. /etc/init.d/functions
+
+case "$1" in
+    start)
+		chkconfig --del add_def_gateway
+		file="/etc/init.d/add_def_gateway"
+		if [ -f $file ]
+		then
+			rm -f $file
+		fi
+		chkconfig --del rm_add_def_route
+		unlink $0
+       ;;
+    stop)
+       stop
+       ;;
+    restart)
+       stop
+       start
+       ;;
+    status)
+       # code to check status of app comes here
+       # example: status program_name
+       ;;
+    *)
+       echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0
+END
+
+upload -<<END /tmp/ImageStreamer/add-def-route
+#! /bin/bash
+
+#Add to after.local
+cat <<"EOF" >>./after.local
+#get interface name 
+ifaces=`cat /tmp/interface_names`
+read -r -a array <<< $ifaces
+interface_name=${array[0]}
+sed -i -e "s/InterfaceName/$interface_name/g" /etc/init.d/add_def_gateway
+chmod +x /etc/init.d/add_def_gateway
+chkconfig --add add_def_gateway
+service add_def_gateway start
+
+#### Note ####
+#If you don't want to run the service "add_def_gateway" after each boot, you can uncomment the block below.
+#chmod +x /etc/init.d/rm_add_def_route
+#chkconfig --add rm_add_def_route
+#service rm_add_def_route start
+#### Note ####
+
+EOF
+
+exit 0
+END
+
+download /tmp/ImageStreamer/add-def-route ./add-def-route
+!source ./add-def-route
+
+# Update /etc/hosts file
+upload -<<END /tmp/update_hosts
+#!/bin/bash
+ifaces=`cat /tmp/interface_names`
+rm -f /tmp/interface_names
+read -r -a array <<< $ifaces
+iface=${array[0]}
+sleep 5s
+ip_address=`/sbin/ifconfig $iface | grep 'inet addr' | cut -d: -f2 | gawk '{print $1}'`
+fqdn=@DomainName@
+alias=`echo "$fqdn" | gawk -F'[.]' '{print $1}'`
+sed -i -e "/127.0.0.1/a\\$ip_address $fqdn $alias" /etc/hosts
+sed -i "/127.0.0.1/a\\#This file has been altered by Image Streamer." /etc/hosts
+unlink $0
+END
+
+#Add script to after.local to run on startup.
+!echo "sh /tmp/update_hosts" >> ./after.local

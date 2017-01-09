@@ -1,0 +1,108 @@
+#For NIC bonding in HPELinux image should have "ifenslave" package installed in it.
+#Child script for NIC bonding.
+upload -<<END /etc/init.d/NIC-bonding
+#! /bin/bash
+bond_name=$1
+net1_mac=$2
+net2_mac=$3
+net1_ip=$4
+net1_gw=$5
+net1_netmask=$6
+
+#Check the maching interface names for mac addresses.
+interfaces=`ls /sys/class/net/`
+for iface in $interfaces
+do
+	mac=`cat /sys/class/net/$iface/address`
+	if [ ${mac,,} == ${net1_mac,,} ]
+	then
+		nic1=$iface
+	elif [ ${mac,,} == ${net2_mac,,} ]
+	then
+		nic2=$iface
+	fi
+done
+	
+
+cat <<CONF>>/etc/network/interfaces 
+#This file has been altered by Image Streamer.
+
+#$nic1 configuration
+auto $nic1
+iface $nic1 inet manual
+bond-master $bond_name
+
+#$nic2 configuration
+auto $nic2
+iface $nic2 inet manual
+bond-master $bond_name
+
+CONF
+
+
+if [[ -z $net1_ip ]]
+then
+
+echo "Configure $bond_name for dhcp."
+cat <<CONF>>/etc/network/interfaces 
+# Bonding $nic1 & $nic2 to create $bond_name NIC and Configure $bond_name for dhcp.
+auto $bond_name
+iface $bond_name inet dhcp
+
+CONF
+
+else
+
+echo "Configure $bond_name for static."
+cat <<CONF>>/etc/network/interfaces 
+# Bonding $nic1 & $nic2 to create $bond_name NIC and Configure $bond_name for static.
+auto $bond_name
+iface $bond_name inet static
+address $net1_ip
+gateway $net1_gw
+netmask $net1_netmask
+
+CONF
+
+fi
+exit 0
+END
+
+#Parent script for NIC bonding.
+upload -<<END /tmp/ImageStreamer/bonding-configuration
+#! /bin/bash
+bond_count=@TotalNicbondings:1@
+bond0=@FirstNicBondName:bond0@
+bond1=@SecondNicBondName:bond1@
+
+#Add “bonding” at the end of /etc/modules
+echo "echo bonding >> /etc/modules" >> rc.local
+#Stop networking
+echo "service networking stop" >> ./rc.local
+#load the bonding kernel module
+echo "modprobe bonding" >> ./rc.local
+
+for i in `seq 1 $bond_count`
+do
+	if [ $i -eq 1 ];then
+		echo "echo $bond0 > /tmp/interface_names" >> ./rc.local
+		if [[ "@Bond0NIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/NIC-bonding $bond0 @Bond0NIC1.mac@ @Bond0NIC2.mac@ @Bond0NIC1.ipaddress@ @Bond0NIC1.gateway@ @Bond0NIC1.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/NIC-bonding $bond0 @Bond0NIC1.mac@ @Bond0NIC2.mac@" >> ./rc.local
+		fi
+	elif [ $i -eq 2 ];then
+		echo "echo $bond1 >> /tmp/interface_names" >> ./rc.local
+		if [[ "@Bond1NIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "bash /etc/init.d/NIC-bonding $bond1 @Bond1NIC1.mac@ @Bond1NIC2.mac@ @Bond1NIC1.ipaddress@ @Bond1NIC1.gateway@ @Bond1NIC1.netmask@" >> ./rc.local
+		else
+			echo "bash /etc/init.d/NIC-bonding $bond1 @Bond1NIC1.mac@ @Bond1NIC2.mac@" >> ./rc.local
+		fi
+	fi
+done
+echo "rm -rf /etc/init.d/NIC-bonding" >> ./rc.local
+echo "service networking start" >> ./rc.local
+END
+
+download /tmp/ImageStreamer/bonding-configuration ./bonding-configuration
+!source ./bonding-configuration

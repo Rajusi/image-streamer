@@ -1,0 +1,84 @@
+upload -<<END /tmp/MgmtNIC-configure
+#! /bin/bash
+net_mac=$1
+net_ip=$2
+net_netmask=$3
+
+#Check the maching interface name for $net_mac.
+interfaces=`ls /sys/class/net/`
+for iface in $interfaces
+do
+	mac=`cat /sys/class/net/$iface/address`
+	if [ ${mac,,} == ${net_mac,,} ]
+	then
+		interface_name=$iface
+		echo $interface_name >> /tmp/interface_names
+	fi
+done
+
+if [[ -z $net_ip ]]
+then
+echo "Configure $interface_name for DHCP"
+cat <<CONF>/etc/sysconfig/network/ifcfg-$interface_name 
+#This file has been created by Image Streamer.
+NAME="$nic"
+DEVICE="$nic"
+BOOTPROTO="dhcp"
+STARTMODE=auto
+CONF
+
+else
+
+echo "Configure $interface_name for static."
+cat <<CONF>/etc/sysconfig/network/ifcfg-$interface_name 
+#This file has been created by Image Streamer.
+NAME="$nic"
+DEVICE="$nic"
+BOOTPROTO="static"
+STARTMODE=auto
+IPADDR="$net_ip"
+NETMASK="$net_netmask"
+CONF
+
+fi
+exit 0
+END
+
+upload -<<END /tmp/ImageStreamer/network-configuration
+#! /bin/bash
+NICs_count=@TotalMgmtNICs:1@
+for i in `seq 1 $NICs_count`
+do
+	if [ $i -eq 1 ];then
+		if [[ "@MgmtNIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC1.mac@ @MgmtNIC1.ipaddress@ @MgmtNIC1.netmask@" >> ./after.local
+		else
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC1.mac@" >> ./after.local
+		fi
+	elif [ $i -eq 2 ];then
+		if [[ "@MgmtNIC2.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC2.mac@ @MgmtNIC2.ipaddress@ @MgmtNIC2.netmask@" >> ./after.local
+		else
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC2.mac@" >> ./after.local
+		fi
+	elif [ $i -eq 3 ];then
+		if [[ "@MgmtNIC3.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC3.mac@ @MgmtNIC3.ipaddress@ @MgmtNIC3.netmask@" >> ./after.local
+		else
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC3.mac@" >> ./after.local
+		fi
+	elif [ $i -eq 4 ];then
+		if [[ "@MgmtNIC4.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC4.mac@ @MgmtNIC4.ipaddress@ @MgmtNIC4.netmask@" >> ./after.local
+		else
+			echo "sh /tmp/MgmtNIC-configure @MgmtNIC4.mac@" >> ./after.local
+		fi
+	fi
+done
+echo "service network restart" >> ./after.local
+echo "rm -f /tmp/MgmtNIC-configure" >> ./after.local
+exit 0
+END
+
+download /tmp/ImageStreamer/network-configuration ./network-configuration
+!source ./network-configuration
