@@ -1,12 +1,12 @@
 # Change root's password 
-upload -<<END /etc/init.d/change_root_passwd
+upload -<<END /tmp/change_root_passwd
 #! /bin/bash
-echo "root:@NewRootPassword@" | chpasswd
+echo "@NewRootPassword@" | passwd root --stdin
 unlink $0
 END
 
 #Script to add new user and create password for new user
-upload -<<END /etc/init.d/add_users
+upload -<<END /tmp/add_users
 #!/bin/bash
 #Add comments
 sed -i -e '$a\#Following users have been added from Image Streamer' /etc/passwd
@@ -16,27 +16,27 @@ users_string="@NewUsers@"
 
 #Users will be added with the same password. On first login users has to change their password.
 password="@NewUsersPassword@"
-IFS=',; '
-for user in $users_string
+IFS=',; ' read -r -a array <<< "$users_string"
+for user in "${array[@]}"
 do
 	if [ $(id -u) -eq 0 ]; then
-			egrep "$user" /etc/passwd >/dev/null
-			if [ $? -eq 0 ]; then
-					echo "Warning: $user exists!"
-			else
-					useradd -m $user
-					echo "$user:$password" | chpasswd
-					[ $? -eq 0 ] && echo "User $user has been added to system!" || echo "Failed to add a user!"
-			fi
+		egrep "$user" /etc/passwd >/dev/null
+		if [ $? -eq 0 ]; then
+			echo "Warning: $user exists!"
+		else
+			useradd -m $user
+			echo $password | passwd $user --stdin
+			[ $? -eq 0 ] && echo "User $user has been added to system!" || echo "Failed to add a user!"
+		fi
 	else
-			echo "Error: Unable to add $user"
+		echo "Error: Unable to add $user"
 	fi
 done
 unlink $0
 END
 
 #Add script to rc.local to run at boot time.
-!echo "sh /etc/init.d/change_root_passwd" >> rc.local
+!echo "sh /tmp/change_root_passwd" >> rc.local
 
 #Add script to rc.local to run at boot time.
-!echo "sh /etc/init.d/add_users" >> rc.local
+!echo "sh /tmp/add_users" >> rc.local

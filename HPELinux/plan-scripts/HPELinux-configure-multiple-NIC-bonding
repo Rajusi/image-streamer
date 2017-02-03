@@ -25,7 +25,6 @@ done
 	
 
 cat <<CONF>>/etc/network/interfaces 
-#This file has been altered by Image Streamer.
 
 #$nic1 configuration
 auto $nic1
@@ -71,6 +70,8 @@ END
 #Parent script for NIC bonding.
 upload -<<END /tmp/ImageStreamer/bonding-configuration
 #! /bin/bash
+echo "sed -ie \"\\\$a#This file has been altered by Image Streamer\" /etc/network/interfaces" >> ./rc.local
+
 bond_count=@TotalNicbondings:1@
 bond0=@FirstNicBondName:bond0@
 bond1=@SecondNicBondName:bond1@

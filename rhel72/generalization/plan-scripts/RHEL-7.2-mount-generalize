@@ -1,0 +1,51 @@
+# List the Volume Group and lvols:
+vgs
+lvs
+list-filesystems
+
+# Mount the root partition
+mount /dev/rhel/root /
+
+#Create temporary directory
+mkdir-p /tmp/ImageStreamer
+
+#Validate the Image
+download /etc/os-release ./os-release
+upload -<<END /tmp/ImageStreamer/validate_image
+#! /bin/bash
+file="./os-release"
+exp_os='"Red Hat Enterprise Linux Server"'
+exp_ver='"7.2"'
+if [ -f $file ]
+ then
+	os_name=`cat $file | grep -w "NAME" | awk -F'[=]' '{print $2}'`
+	version_id=`cat $file | grep "VERSION_ID" | awk -F'[=]' '{print $2}'`
+
+	if [[ $os_name == $exp_os ]]
+	then
+		#Validate version 
+		if [ $version_id == $exp_ver ]
+		then
+			echo "##########################"
+			echo "Image validation successfully completed!!!"
+			echo "Detected OS: $os_name $version_id"
+			echo "Operating system is matching with the expected Operating System"
+			echo "##########################"
+		else
+			echo "##########################"
+			echo "Image validation failed : Operating system is NOT matching with the expected Operating System"
+			echo "Please ensure that the golden image of Red Hat Enterprise Linux Server 7.2"
+			echo "##########################"
+			exit 1
+		fi
+	fi
+else
+	echo "##########################"
+	echo "Image validation failed : Operating system is NOT matching with the expected Operating System"
+	echo "Please ensure that the golden image of Red Hat Enterprise Linux Server 7.2"
+	echo "##########################"
+	exit 1
+fi
+END
+download /tmp/ImageStreamer/validate_image ./validate_image
+!source ./validate_image

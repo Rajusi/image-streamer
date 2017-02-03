@@ -1,0 +1,64 @@
+#Add ImageStreamerCapture file.
+upload -<<END /tmp/ImageStreamer/capture_details
+#!/bin/bash
+
+echo "Construct ImageStreamerCapture details file"
+echo "HPE Image Streamer Capture for RHEL 7.3 " > ./ImageStreamerCapture
+echo "Complete generalization by host state removal" >> ./ImageStreamerCapture
+date >> ./ImageStreamerCapture
+exit 0
+END
+
+download /tmp/ImageStreamer/capture_details ./capture_details
+!source ./capture_details
+upload ./ImageStreamerCapture /ImageStreamerCapture
+
+cat /ImageStreamerCapture
+
+rm-f /tmp/ImageStreamer/capture_details
+
+# Generalize network file 
+upload -<<END /etc/sysconfig/network
+END
+
+#Generalize /etc/hostname
+upload -<<END /etc/hostname
+localhost.localdomain.com
+END
+
+#Generalize /etc/fstab file
+
+download /etc/fstab ./fstab
+
+upload -<<END /tmp/ImageStreamer/generalize_fstab
+#!/bin/bash
+sed -ie "/#This/ { N; d; }" ./fstab
+exit 0
+END
+
+download /tmp/ImageStreamer/generalize_fstab ./generalize_fstab
+!source ./generalize_fstab
+upload ./fstab /etc/fstab
+
+-rm-rf /root/LVM-Data1
+
+rm-f /tmp/ImageStreamer/generalize_fstab
+
+#Generalize /etc/hosts file
+
+download /etc/hosts ./hosts
+upload -<<END /tmp/ImageStreamer/generalize_hosts
+#!/bin/bash
+
+sed -ie '/#This/ { N; d; }' ./hosts
+exit 0
+END
+
+download /tmp/ImageStreamer/generalize_hosts ./generalize_hosts
+!source ./generalize_hosts
+upload ./hosts /etc/hosts
+rm-f /tmp/ImageStreamer/generalize_hosts
+
+#Generalize /etc/init.d directory
+rm-f /etc/init.d/delete_def_route
+rm-f /etc/init.d/rm_del_def_route

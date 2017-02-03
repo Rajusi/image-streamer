@@ -1,0 +1,35 @@
+#This script generalizes the users
+echo "---- /etc/passwd ---"
+cat /etc/passwd
+
+echo "---- /etc/group ---"
+cat /etc/group
+
+#Download user configuration files
+download /etc/passwd ./passwd
+download /etc/group ./group
+
+upload -<<END /tmp/ImageStreamer/generalize_users
+#! /bin/bash
+users=`awk '$0 == "#Following users have been added from Image Streamer" {i=1;next};i && i++ <= i' ./passwd | cut -d: -f1`
+for user in $users
+do
+	rm -rf /home/$user
+done
+sed -ie "/#Following/,$ d" ./passwd
+sed -ie "/#Following/,$ d" ./group
+exit 0
+END
+
+download /tmp/ImageStreamer/generalize_users ./generalize_users
+!source ./generalize_users
+
+upload ./passwd /etc/passwd
+upload ./group /etc/group
+
+
+echo "--- /etc/passwd ---"
+cat /etc/passwd
+
+echo "--- /etc/group ---"
+cat /etc/group

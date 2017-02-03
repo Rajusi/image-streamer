@@ -1,0 +1,6 @@
+#Remove the temporary directpory created
+#rm-rf /tmp/ImageStreamer
+
+#unmount the root partition
+
+unmount /

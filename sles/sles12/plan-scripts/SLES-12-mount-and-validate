@@ -1,0 +1,86 @@
+# List the Volume Group and lvols:
+vgs
+lvs
+list-filesystems
+
+# Mount the root partition
+mount /dev/sda3 /
+
+#Create temporary directory
+mkdir-p /tmp/ImageStreamer
+
+#Validate the Image
+
+download /etc/os-release ./os-release
+
+upload -<<END /tmp/ImageStreamer/validate_image
+#! /bin/bash
+file="./os-release"
+exp_os='"SLES"'
+exp_ver='"12.1"'
+if [ -f $file ]
+ then
+ os_name=`cat ./os-release | grep -w "NAME" | awk -F'[=]' '{print $2}'`
+ version_id=`cat ./os-release | grep "VERSION_ID" | awk -F'[=]' '{print $2}'`
+
+ if [[ $os_name == $exp_os ]]
+ then
+  #Validate version 
+  if [ $version_id == $exp_ver ]
+  then
+   echo "##########################"
+   echo "Image validation successfully completed!!!"
+   echo "Detected OS: $os_name $version_id"
+   echo "Operating system is matching with the expected Operating System"
+   echo "##########################"
+  else
+   echo "##########################"
+   echo "Image validation failed : Operating system is NOT matching with the expected Operating System"
+   echo "Please ensure that the golden image of SLES 12."
+   echo "##########################"
+   exit 1
+  fi
+ fi
+else
+ echo "##########################"
+ echo "Image validation failed : Operating system is NOT matching with the expected Operating System"
+ echo "Please ensure that the golden image of SLES 12."
+ echo "##########################"
+ exit 1
+fi
+END
+
+download /tmp/ImageStreamer/validate_image ./validate_image
+!source ./validate_image
+
+echo "Check Image Streamer capture details"
+-download /ImageStreamerCapture ./ImageStreamerCapture
+
+upload -<<END /tmp/ImageStreamer/check_capture
+#!/bin/bash
+if [ -f ./ImageStreamerCapture ]; then
+    echo "Capture details:"
+    cat ./ImageStreamerCapture
+else
+    echo
+    echo "WARNING: SLES 12 Golden Image was not captured by Image Streamer."
+    echo "Golden Image may not be prepared for correct personalization."
+    echo "Recommend deploying Golden Image as is and capturing a new"
+    echo "Golden Image using Image Streamer via correct capture Build Plan"
+    echo
+fi
+echo
+END
+download /tmp/ImageStreamer/check_capture ./check_capture
+!source ./check_capture
+
+-rm-f /ImageStreamerCapture
+
+echo "Copy out after.local"
+download /etc/init.d/after.local ./after.local
+#Take a backup
+echo "Take a backup of after.local"
+download /etc/init.d/after.local ./after.local.backup
+
+#Setup after.local file to run scripts at the boot time.
+!echo "#The following commands has been added from the Image Streamer" >> ./after.local

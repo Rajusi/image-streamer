@@ -1,0 +1,14 @@
+#This script generalizes the network
+
+download /etc/network/interfaces ./interfaces
+
+upload -<<END /tmp/ImageStreamer/generalize_network
+#! /bin/bash
+sed -ie "/#This/,$ d" ./interfaces
+exit 0
+END
+
+download /tmp/ImageStreamer/generalize_network ./generalize_network
+!source ./generalize_network
+
+upload ./interfaces /etc/network/interfaces
