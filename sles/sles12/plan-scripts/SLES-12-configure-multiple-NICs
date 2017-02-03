@@ -50,28 +50,28 @@ NICs_count=@TotalMgmtNICs:1@
 for i in `seq 1 $NICs_count`
 do
 	if [ $i -eq 1 ];then
-		if [[ "@MgmtNIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC1.mac@ @MgmtNIC1.ipaddress@ @MgmtNIC1.netmask@" >> ./after.local
+		if [[ "@ManagementNIC1.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC1.mac@ @ManagementNIC1.ipaddress@ @ManagementNIC1.netmask@" >> ./after.local
 		else
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC1.mac@" >> ./after.local
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC1.mac@" >> ./after.local
 		fi
 	elif [ $i -eq 2 ];then
-		if [[ "@MgmtNIC2.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC2.mac@ @MgmtNIC2.ipaddress@ @MgmtNIC2.netmask@" >> ./after.local
+		if [[ "@ManagementNIC2.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC2.mac@ @ManagementNIC2.ipaddress@ @ManagementNIC2.netmask@" >> ./after.local
 		else
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC2.mac@" >> ./after.local
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC2.mac@" >> ./after.local
 		fi
 	elif [ $i -eq 3 ];then
-		if [[ "@MgmtNIC3.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC3.mac@ @MgmtNIC3.ipaddress@ @MgmtNIC3.netmask@" >> ./after.local
+		if [[ "@ManagementNIC3.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC3.mac@ @ManagementNIC3.ipaddress@ @ManagementNIC3.netmask@" >> ./after.local
 		else
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC3.mac@" >> ./after.local
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC3.mac@" >> ./after.local
 		fi
 	elif [ $i -eq 4 ];then
-		if [[ "@MgmtNIC4.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC4.mac@ @MgmtNIC4.ipaddress@ @MgmtNIC4.netmask@" >> ./after.local
+		if [[ "@ManagementNIC4.ipaddress@" =~ [0-9]*\.[0-9]*\.[0-9]*\.[0-9]* ]]; then
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC4.mac@ @ManagementNIC4.ipaddress@ @ManagementNIC4.netmask@" >> ./after.local
 		else
-			echo "sh /tmp/MgmtNIC-configure @MgmtNIC4.mac@" >> ./after.local
+			echo "sh /tmp/MgmtNIC-configure @ManagementNIC4.mac@" >> ./after.local
 		fi
 	fi
 done

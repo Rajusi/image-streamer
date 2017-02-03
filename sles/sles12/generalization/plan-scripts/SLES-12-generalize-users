@@ -1,0 +1,19 @@
+#This script generalizes the users
+#Download user configuration files
+download /etc/passwd ./passwd
+download /etc/group ./group
+
+upload -<<END /tmp/ImageStreamer/generalize_users
+#! /bin/bash
+
+sed -i -e "/#Following/,$ d" ./passwd
+sed -i -e "/#Following/,$ d" ./group
+
+exit 0
+END
+
+download /tmp/ImageStreamer/generalize_users ./generalize_users
+!source ./generalize_users
+
+upload ./passwd /etc/passwd
+upload ./group /etc/group

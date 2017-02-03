@@ -1,0 +1,28 @@
+#Generalize the network
+!mkdir new_network
+
+#Copy "/etc/sysconfig/network/" directory
+copy-out /etc/sysconfig/network/ new_network/
+
+upload -<<END /tmp/ImageStreamer/gen_network_conf 
+#!/bin/bash
+net_cfg_files=`ls new_network/network/ | grep "ifcfg-"`
+
+for net_cfg_file in $net_cfg_files
+do
+	if [ $net_cfg_file  != "ifcfg-lo" ]
+	then
+		rm -rf new_network/network/$net_cfg_file 
+		echo "Network interface cfg file $net_cfg_file successfully removed!!!" 
+	fi
+done
+exit 0
+END
+
+download /tmp/ImageStreamer/gen_network_conf ./gen_network_conf
+!source ./gen_network_conf
+
+#Replace the network directory with updated one
+rm-rf /etc/sysconfig/network
+
+copy-in new_network/network/ /etc/sysconfig/

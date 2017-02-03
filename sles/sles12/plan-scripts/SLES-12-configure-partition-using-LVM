@@ -53,8 +53,12 @@ mkfs.ext4 /dev/@LvmVolumeGroupName:new_vol_group@/@LvmVolumeName:new_vol@
 mkdir /root/LVM-Data1
 
 mount /dev/@LvmVolumeGroupName:new_vol_group@/@LvmVolumeName:new_vol@ /root/LVM-Data1
-sed -i -e '$a\#This file has been altered by Image Streamer.' /etc/fstab
-sed -i -e '$a\/dev/@LvmVolumeGroupName:new_vol_group@/@LvmVolumeName:new_vol@ /root/LVM-Data1 ext4 defaults 0 0' /etc/fstab
+if [ $? -eq 0 ]; then
+	sed -i -e '$a\#This file has been altered by Image Streamer.' /etc/fstab
+	sed -i -e '$a\/dev/@LogicalVolumeGroupName:new_vol_group@/@LogicalVolumeName:new_vol@ /root/LVM-Data1 ext4 defaults 0 0' /etc/fstab
+else
+	rm -rf /root/LVM-Data1
+fi
 
 unlink $0
 

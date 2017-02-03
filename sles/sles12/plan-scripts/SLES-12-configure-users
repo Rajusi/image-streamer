@@ -8,7 +8,9 @@ END
 #Script to add new user and create password for new user
 upload -<<END /tmp/add_users
 #!/bin/bash
-
+#Add comments
+sed -i -e '$a\#Following users have been added from Image Streamer' /etc/passwd
+sed -i -e '$a\#Following users have been added from Image Streamer' /etc/group
 users_string="@NewUsers@"
 
 #Users will be added with the same password. On first login users has to change their password.
